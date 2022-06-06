@@ -70,7 +70,7 @@ func (p *gcsProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		key += p.config.indexFile
 	}
 
-	object := p.bucket.Object(key)
+	object := p.bucket.Object(key).ReadCompressed(strings.Contains(r.Header.Get("Accept-Encoding"), "gzip"))
 	attrs, err := object.Attrs(r.Context())
 	if errors.Is(err, storage.ErrBucketNotExist) {
 		http.Error(w, fmt.Sprintf("GCS bucket %q is not found", p.config.bucketName), http.StatusInternalServerError)

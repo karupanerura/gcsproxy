@@ -52,7 +52,8 @@ func CreateHTTPHandler(ctx context.Context, config Config, opts ...Option) (http
 		config: config,
 		bufPool: &sync.Pool{
 			New: func() interface{} {
-				return make([]byte, config.BufByteSize)
+				b := make([]byte, config.BufByteSize)
+				return &b
 			},
 		},
 	}
@@ -201,10 +202,10 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 	}
 	w.WriteHeader(statusCode)
 
-	buf := p.bufPool.Get().([]byte)
-	defer p.bufPool.Put(buf)
+	bufP := p.bufPool.Get().(*[]byte)
+	defer p.bufPool.Put(bufP)
 
-	_, err = io.CopyBuffer(w, rdr, buf)
+	_, err = io.CopyBuffer(w, rdr, *bufP)
 	if errors.Is(err, context.Canceled) {
 		// it means client closed
 	} else if err != nil {

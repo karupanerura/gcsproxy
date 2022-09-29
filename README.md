@@ -2,6 +2,8 @@
 
 HTTP Proxy for Goolge Cloud Storage.
 
+[![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
+
 ## Motivation
 
 Cloud Load Balancing can use Identity Aware Proxy (IAP) to restrict access.

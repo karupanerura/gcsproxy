@@ -1,0 +1,21 @@
+{
+    "name": "gcsproxy",
+    "env": {
+        "GCS_PROXY_BUCKET": {
+            "description": "GCS bucket name",
+            "required": true
+        },
+        "GCS_PROXY_PATH_PREFIX": {
+            "description": "URL path prefix. use it as GCS object key from URL path exclude the path prefix",
+            "required": false
+        },
+        "GCS_PROXY_INDEX_FILE": {
+            "description": "Index file name. (e.g. "index.html")",
+            "required": false
+        },
+        "GCS_PROXY_NOT_FOUND_PATH": {
+            "description": "Path for not found error",
+            "required": false
+        }
+    }
+}

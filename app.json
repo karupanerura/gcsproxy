@@ -10,7 +10,7 @@
             "required": false
         },
         "GCS_PROXY_INDEX_FILE": {
-            "description": "Index file name. (e.g. "index.html")",
+            "description": "Index file name. (e.g. \"index.html\")",
             "required": false
         },
         "GCS_PROXY_NOT_FOUND_PATH": {

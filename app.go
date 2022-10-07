@@ -95,6 +95,13 @@ func (p *gcsProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	condition, err := parseCacheCondition(r.Header)
+	if err != nil {
+		log.Printf("invalid cache condition: %v", err)
+		http.Error(w, "invalid conditional request", http.StatusBadRequest)
+		return
+	}
+
 	bodyRange, err := parseRange(r.Header.Get("Range"))
 	if err != nil {
 		log.Printf("invalid range %q: %v", r.Header.Get("Range"), err)
@@ -103,11 +110,12 @@ func (p *gcsProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req := proxyRequest{
-		path:        r.URL.Path,
-		bodyRange:   bodyRange,
-		allowGziped: isGzipAllowed(r.Header.Get("Accept-Encoding")),
-		onlyHead:    r.Method == http.MethodHead,
-		statusCode:  http.StatusOK,
+		path:           r.URL.Path,
+		cacheCondition: condition,
+		bodyRange:      bodyRange,
+		allowGziped:    isGzipAllowed(r.Header.Get("Accept-Encoding")),
+		onlyHead:       r.Method == http.MethodHead,
+		statusCode:     http.StatusOK,
 	}
 
 	p.proxy(r.Context(), w, &req)
@@ -135,11 +143,12 @@ func isGzipAllowed(ae string) bool {
 }
 
 type proxyRequest struct {
-	path        string
-	bodyRange   bodyRange
-	allowGziped bool
-	onlyHead    bool
-	statusCode  int
+	path           string
+	cacheCondition cacheCondition
+	bodyRange      bodyRange
+	allowGziped    bool
+	onlyHead       bool
+	statusCode     int
 }
 
 func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyRequest) {
@@ -170,20 +179,17 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 	}
 
 	// set headers
-	setHeadersByAttrs(w.Header(), attrs)
+	setHeadersByAttrs(w.Header(), req, attrs)
+	if req.cacheCondition.ETag != nil && attrs.Etag != "" && !req.cacheCondition.ETag.Match(attrs.Etag, !req.bodyRange.isAll()) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+	if req.cacheCondition.Time != nil && !attrs.Updated.IsZero() && !req.cacheCondition.Time.Match(attrs.Updated) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
 	if req.onlyHead {
 		w.WriteHeader(req.statusCode)
-
-		// XXX: hijack to force close the connection
-		if hj, ok := w.(http.Hijacker); ok {
-			conn, bufw, err := hj.Hijack()
-			if err != nil {
-				log.Println("hijack: ", err)
-				return
-			}
-			bufw.Writer.Flush()
-			conn.Close()
-		}
 		return
 	}
 
@@ -213,9 +219,16 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 	}
 }
 
-func setHeadersByAttrs(h http.Header, attrs *storage.ObjectAttrs) {
+func setHeadersByAttrs(h http.Header, req *proxyRequest, attrs *storage.ObjectAttrs) {
 	if v := attrs.Etag; v != "" {
-		h.Set("ETag", v)
+		if req.bodyRange.isAll() {
+			h.Set("ETag", strconv.Quote(v))
+		} else {
+			h.Set("ETag", "W/"+strconv.Quote(v))
+		}
+	}
+	if v := attrs.Updated; !v.IsZero() {
+		h.Set("Last-Modified", formatIMFfixdate(v))
 	}
 	if v := attrs.CacheControl; v != "" {
 		h.Set("Cache-Control", v)

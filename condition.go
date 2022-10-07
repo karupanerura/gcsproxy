@@ -154,10 +154,6 @@ func parseETagValuesToSet(eTag string) (map[string]eTagType, bool, error) {
 			weakRef = true
 			fallthrough
 		case '"':
-			fmt.Println(eTag)
-			fmt.Println(offset)
-			fmt.Println(i)
-			fmt.Println(len(eTag))
 			if offset+i+1 >= len(eTag) {
 				return nil, false, fmt.Errorf("y invalid character at %d", i)
 			}

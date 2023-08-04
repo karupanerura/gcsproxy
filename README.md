@@ -15,7 +15,7 @@ Therefore, a Proxy to GCS acting as a Backend Service is required to restrict ac
 
 ## Usage
 
-Deploy the built docker image `ghcr.io/karupanerura/gcsproxy:v0.0.2` to Cloud Run or any other services of Google Cloud Platform.
+Deploy the built docker image `ghcr.io/karupanerura/gcsproxy:v0.0.3` to Cloud Run or any other services of Google Cloud Platform.
 
 ### Environment Variables
 

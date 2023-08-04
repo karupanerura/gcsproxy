@@ -61,7 +61,7 @@ func parseRange(raw string) (bodyRange, error) {
 			return bodyRange{}, errors.New("incorrect number range")
 		}
 
-		r.length = end - r.offset
+		r.length = end - r.offset + 1
 		return r, nil
 	}
 }

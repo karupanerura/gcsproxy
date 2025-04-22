@@ -23,3 +23,4 @@ Deploy the built docker image `ghcr.io/karupanerura/gcsproxy:v0.0.3` to Cloud Ru
 * GCS_PROXY_PATH_PREFIX: URL path prefix. use it as GCS object key from URL path exclude the path prefix. (default: "/")
 * GCS_PROXY_INDEX_FILE: Index file name. (e.g. "index.html")
 * GCS_PROXY_NOT_FOUND_PATH: Path for not found error. (e.g. "/404.html")
+* GCS_PROXY_BASIC_AUTH: Basic Authentication Settings in .htpasswd format. (e.g. "usr1:kI6oFWZHn9A\nusr2:kI6oFWZHn9AJA")

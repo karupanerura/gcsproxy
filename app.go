@@ -75,6 +75,23 @@ func CreateHTTPHandler(ctx context.Context, config Config, opts ...Option) (http
 	// init bucket
 	proxy.bucket = proxy.client.Bucket(config.BucketName)
 
+	// init attrs
+	attrs, err := proxy.bucket.Attrs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("bucket.Attrs: %w", err)
+	}
+	proxy.attrs = attrs
+
+	// set default IndexFile/NotFoundPath from Bucket's Website setting
+	if proxy.attrs.Website != nil {
+		if proxy.config.IndexFile == "" {
+			proxy.config.IndexFile = proxy.attrs.Website.MainPageSuffix
+		}
+		if proxy.config.NotFoundPath == "" {
+			proxy.config.NotFoundPath = proxy.attrs.Website.NotFoundPage
+		}
+	}
+
 	return proxy, nil
 }
 
@@ -84,12 +101,25 @@ type gcsProxy struct {
 	bufPool *sync.Pool
 	client  *storage.Client
 	bucket  *storage.BucketHandle
+	attrs   *storage.BucketAttrs
 }
 
 func (p *gcsProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet, http.MethodHead:
 		// accept
+	case http.MethodOptions:
+		w.Header().Set("Allow", "OPTIONS, GET, HEAD")
+		w.Header().Set("Accept-Ranges", "bytes")
+		for _, cors := range p.attrs.CORS {
+			w.Header().Set("Access-Control-Allow-Origin", strings.Join(cors.Origins, ", "))
+			w.Header().Set("Access-Control-Allow-Methods", strings.Join(cors.Methods, ", "))
+			w.Header().Set("Access-Control-Allow-Headers", strings.Join(cors.ResponseHeaders, ", "))
+			w.Header().Set("Access-Control-Max-Age", strconv.FormatFloat(cors.MaxAge.Seconds(), 'f', 0, 64))
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return
+
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return

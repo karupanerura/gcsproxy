@@ -1,4 +1,4 @@
-FROM golang:1.18 as builder
+FROM golang:1.24-bookworm as builder
 
 WORKDIR /app
 
@@ -8,9 +8,9 @@ RUN go mod download
 
 COPY ./ ./
 
-RUN go build -o app ./cmd/gcsproxy/main.go
+RUN go build -o gcsproxy ./cmd/gcsproxy/main.go
 
-FROM gcr.io/distroless/base-debian10
+FROM gcr.io/distroless/base-debian12
 
-COPY --from=builder /app/app /
-CMD ["/app"]
+COPY --from=builder /app/gcsproxy /
+CMD ["/gcsproxy"]

@@ -218,12 +218,12 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
-	if req.onlyHead {
-		w.WriteHeader(req.statusCode)
-		return
-	}
 
-	rdr, err := object.NewRangeReader(ctx, req.bodyRange.offset, req.bodyRange.length)
+	length := req.bodyRange.length
+	if req.onlyHead && req.bodyRange.isAll() {
+		length = 1 // read a byte in content if HEAD method
+	}
+	rdr, err := object.NewRangeReader(ctx, req.bodyRange.offset, length)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("object.NewReader for path %q: %v", req.path, err), http.StatusBadGateway)
 		return
@@ -237,6 +237,12 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 		statusCode = http.StatusPartialContent
 	}
 	w.WriteHeader(statusCode)
+	if req.onlyHead {
+		bufP := p.bufPool.Get().(*[]byte)
+		defer p.bufPool.Put(bufP)
+		_, err = io.CopyBuffer(io.Discard, rdr, *bufP)
+		return
+	}
 
 	bufP := p.bufPool.Get().(*[]byte)
 	defer p.bufPool.Put(bufP)

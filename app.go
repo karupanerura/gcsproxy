@@ -164,7 +164,7 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 		return
 	} else if errors.Is(err, storage.ErrObjectNotExist) || (attrs != nil && !attrs.Deleted.IsZero()) {
 		if p.config.NotFoundPath != "" && p.config.NotFoundPath != req.path {
-			req := proxyRequest(*req)
+			req := *req
 			req.path = p.config.NotFoundPath
 			req.statusCode = http.StatusNotFound
 			p.proxy(ctx, w, &req)
@@ -236,9 +236,6 @@ func setHeadersByAttrs(h http.Header, req *proxyRequest, attrs *storage.ObjectAt
 	if v := attrs.ContentType; v != "" {
 		h.Set("Content-Type", v)
 	}
-	if v := attrs.Size; v != 0 {
-		h.Set("Content-Length", strconv.FormatInt(v, 10))
-	}
 }
 
 func setHeadersByReader(h http.Header, req *proxyRequest, rdr *storage.Reader) {
@@ -256,7 +253,9 @@ func setHeadersByReader(h http.Header, req *proxyRequest, rdr *storage.Reader) {
 	}
 
 	if req.bodyRange.isAll() {
-		h.Set("Content-Length", strconv.FormatInt(rdr.Attrs.Size, 10))
+		if rdr.Attrs.Size != -1 {
+			h.Set("Content-Length", strconv.FormatInt(rdr.Attrs.Size, 10))
+		}
 	} else {
 		h.Set("Content-Length", strconv.FormatInt(rdr.Remain(), 10))
 		h.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rdr.Attrs.StartOffset, rdr.Attrs.StartOffset+rdr.Remain(), rdr.Attrs.Size))

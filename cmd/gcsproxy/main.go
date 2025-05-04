@@ -12,6 +12,8 @@ import (
 
 	"github.com/karupanerura/gcsproxy"
 	"github.com/tg123/go-htpasswd"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 const defaultPort = "8080"
@@ -44,9 +46,10 @@ func main() {
 	}
 
 	port := getEnv("PORT", defaultPort)
+	h2s := &http2.Server{}
 	svr := http.Server{
 		Addr:    net.JoinHostPort("", port),
-		Handler: handler,
+		Handler: h2c.NewHandler(handler, h2s),
 	}
 	if err := svr.ListenAndServe(); err == nil || errors.Is(err, http.ErrServerClosed) {
 		return // ok

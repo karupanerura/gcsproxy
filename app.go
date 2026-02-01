@@ -141,12 +141,14 @@ func (p *gcsProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	req := proxyRequest{
 		path:           r.URL.Path,
-		req:            r,
 		cacheCondition: condition,
 		bodyRange:      bodyRange,
 		allowGziped:    isGzipAllowed(r.Header.Get("Accept-Encoding")),
 		onlyHead:       r.Method == http.MethodHead,
 		statusCode:     http.StatusOK,
+		redirectFunc: func(path string, statusCode int) {
+			http.Redirect(w, r, path, statusCode)
+		},
 	}
 
 	p.proxy(r.Context(), w, &req)
@@ -175,12 +177,12 @@ func isGzipAllowed(ae string) bool {
 
 type proxyRequest struct {
 	path           string
-	req            *http.Request
 	cacheCondition cacheCondition
 	bodyRange      bodyRange
 	allowGziped    bool
 	onlyHead       bool
 	statusCode     int
+	redirectFunc   func(path string, statusCode int)
 }
 
 func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyRequest) {
@@ -202,11 +204,15 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 		if !strings.HasSuffix(req.path, "/") {
 			it := p.bucket.Objects(ctx, &storage.Query{Prefix: key + "/", Delimiter: "/"})
 			objAttrs, err := it.Next()
-			if err == nil && objAttrs != nil {
-				// There is at least one object with this prefix, treat as folder
-				log.Printf("redirecting to folder path %q", req.path+"/")
-				http.Redirect(w, req.req, req.path+"/"+p.config.IndexFile, http.StatusMovedPermanently)
-				return
+			if err == nil {
+				if objAttrs != nil {
+					// There is at least one object with this prefix, treat as folder
+					log.Printf("redirecting to folder path %q", req.path+"/")
+					req.redirectFunc(req.path+"/"+p.config.IndexFile, http.StatusMovedPermanently)
+					return
+				}
+			} else {
+				http.Error(w, fmt.Sprintf("error iterating objects for path %q: %v", req.path, err), http.StatusBadGateway)
 			}
 		}
 

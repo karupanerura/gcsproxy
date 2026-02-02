@@ -29,8 +29,7 @@ All notable changes to this project will be documented in this file.
 ## v0.0.3
 
 ### Fixed
-- Fixed range request length calculation that was 1 byte too short (#2)
-- Added tests for range request handling (#2)
+- Fixed range request length calculation that was 1 byte too short, added comprehensive tests (#2)
 
 ## v0.0.2
 

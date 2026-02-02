@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 - Upgraded Go dependencies and updated Dockerfile base images (#9)
 
 ### Fixed
-- Fixed redirect behavior when requesting directory paths without trailing slash to properly redirect to index file, matching GCS static website behavior (#8)
+- Fixed redirect behavior when requesting directory paths without trailing slash to properly redirect to index file, matching GCS static website behavior (#8 by @ysylife)
 
 ## v0.0.5
 
@@ -29,7 +29,7 @@ All notable changes to this project will be documented in this file.
 ## v0.0.3
 
 ### Fixed
-- Fixed range request length calculation that was 1 byte too short, added comprehensive tests (#2)
+- Fixed range request length calculation that was 1 byte too short, added comprehensive tests (#2 by @p1ass)
 
 ## v0.0.2
 

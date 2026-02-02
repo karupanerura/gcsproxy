@@ -1,4 +1,4 @@
-FROM golang:1.24-bookworm as builder
+FROM golang:1.25-trixie as builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY ./ ./
 
 RUN go build -o gcsproxy ./cmd/gcsproxy/main.go
 
-FROM gcr.io/distroless/base-debian12
+FROM gcr.io/distroless/base-debian13:nonroot
 
 COPY --from=builder /app/gcsproxy /
 CMD ["/gcsproxy"]

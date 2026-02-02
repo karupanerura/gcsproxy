@@ -4,41 +4,42 @@ All notable changes to this project will be documented in this file.
 
 ## v0.0.6
 
-### Improvements
-- Upgraded dependencies and runtimes to latest versions (#9)
+### Changed
+- Upgraded Go dependencies and updated Dockerfile base images (#9)
 
-### Bug Fixes
-- Fixed redirect when requesting directories (e.g., `http://www.example.com/dir`) to properly handle MainPageSuffix setting, aligning with GCS static website behavior (#8)
+### Fixed
+- Fixed redirect behavior when requesting directory paths without trailing slash to properly redirect to index file, matching GCS static website behavior (#8)
 
 ## v0.0.5
 
-### Bug Fixes
-- Fixed redirect when requesting directories to match GCS MainPageSuffix behavior (#8)
+### Changed
+- Updated CI/CD workflow to build multi-platform Docker images (linux/amd64, linux/arm64) (#7)
 
 ## v0.0.4
 
-### Improvements
-- Added support for multiple platform Docker images (linux/amd64, linux/arm64) for better compatibility with Arm CPUs (#7)
+### Added
+- Added support for OPTIONS method with CORS headers from bucket configuration (#5)
+- Added Basic Authentication support via `GCS_PROXY_BASIC_AUTH` environment variable (#3)
+- Added automatic configuration from GCS bucket's Website settings (MainPageSuffix, NotFoundPage) (#3)
+
+### Fixed
+- Fixed HEAD method to read 1 byte instead of full content when checking object existence (#6)
+- Fixed Content-Length header calculation for range requests (#4)
 
 ## v0.0.3
 
-### New Features
-- Added support for Basic Authentication via `GCS_PROXY_BASIC_AUTH` environment variable (#3)
-- Added support for OPTIONS requests and CORS headers (#5)
-
-### Bug Fixes
-- Fixed incorrect Content-Length header in responses - corrected attrs.Size usage (#4)
-- Fixed HEAD method to return correct headers without response body (#6)
+### Fixed
+- Fixed range request length calculation that was 1 byte too short (#2)
+- Added tests for range request handling (#2)
 
 ## v0.0.2
 
-### Bug Fixes
-- Fixed range request length calculation - was 1 byte too short (#2)
-- Added comprehensive tests for range request handling (#2)
+### Added
+- Added conditional request support (If-None-Match, If-Modified-Since) (#1)
+- Added 304 Not Modified response support (#1)
+- Added ETag and Last-Modified headers (#1)
+- Added LICENSE and README documentation (#1)
 
 ## v0.0.1
 
-### New Features
-- Added conditional request support for GET requests (#1)
-- Implemented 304 Not Modified responses for requests with conditional headers (If-None-Match, If-Modified-Since) (#1)
-- Added ETag and Last-Modified header support (#1)
+Initial release.

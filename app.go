@@ -146,6 +146,9 @@ func (p *gcsProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		allowGziped:    isGzipAllowed(r.Header.Get("Accept-Encoding")),
 		onlyHead:       r.Method == http.MethodHead,
 		statusCode:     http.StatusOK,
+		redirectFunc: func(path string, statusCode int) {
+			http.Redirect(w, r, path, statusCode)
+		},
 	}
 
 	p.proxy(r.Context(), w, &req)
@@ -179,6 +182,7 @@ type proxyRequest struct {
 	allowGziped    bool
 	onlyHead       bool
 	statusCode     int
+	redirectFunc   func(path string, statusCode int)
 }
 
 func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyRequest) {
@@ -193,6 +197,25 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 		http.Error(w, fmt.Sprintf("GCS bucket %q is not found", p.config.BucketName), http.StatusInternalServerError)
 		return
 	} else if errors.Is(err, storage.ErrObjectNotExist) || (attrs != nil && !attrs.Deleted.IsZero()) {
+		// Check if key is a folder (prefix exists in bucket but no object with that name)
+		// https://docs.cloud.google.com/storage/docs/static-website#examples
+		// add logic as: URL Requested: http://www.example.com/dir
+		// Content Served:A response with an empty body and a 301 Location header that points to "dir/index.html".
+		if !strings.HasSuffix(req.path, "/") {
+			it := p.bucket.Objects(ctx, &storage.Query{Prefix: key + "/", Delimiter: "/"})
+			objAttrs, err := it.Next()
+			if err == nil {
+				if objAttrs != nil {
+					// There is at least one object with this prefix, treat as folder
+					log.Printf("redirecting to folder path %q", req.path+"/")
+					req.redirectFunc(req.path+"/"+p.config.IndexFile, http.StatusMovedPermanently)
+					return
+				}
+			} else {
+				http.Error(w, fmt.Sprintf("error iterating objects for path %q: %v", req.path, err), http.StatusBadGateway)
+			}
+		}
+
 		if p.config.NotFoundPath != "" && p.config.NotFoundPath != req.path {
 			req := *req
 			req.path = p.config.NotFoundPath

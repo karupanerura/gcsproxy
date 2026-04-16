@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.7
+
+### Fixed
+- Should handle `iterator.Done` to avoid unexpected 502 error (#12)
+
 ## v0.0.6
 
 ### Changed

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/iterator"
 )
 
 type Config struct {
@@ -211,6 +212,8 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 					req.redirectFunc(req.path+"/"+p.config.IndexFile, http.StatusMovedPermanently)
 					return
 				}
+			} else if err == iterator.Done {
+				// not found: continue
 			} else {
 				http.Error(w, fmt.Sprintf("error iterating objects for path %q: %v", req.path, err), http.StatusBadGateway)
 			}

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.8
+
+- add query parameters when redirect when request http://www.example.com/m/dir (#13 by @ysylife)
+
 ## v0.0.7
 
 ### Fixed

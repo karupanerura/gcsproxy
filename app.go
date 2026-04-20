@@ -148,11 +148,26 @@ func (p *gcsProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		onlyHead:       r.Method == http.MethodHead,
 		statusCode:     http.StatusOK,
 		redirectFunc: func(path string, statusCode int) {
-			http.Redirect(w, r, path, statusCode)
+			redirectPath := redirectPathWithQuery(path, r.URL.RawQuery)
+			log.Printf("redirecting to %q", redirectPath)
+			http.Redirect(w, r, redirectPath, statusCode)
 		},
 	}
 
 	p.proxy(r.Context(), w, &req)
+}
+
+func redirectPathWithQuery(path string, rawQuery string) string {
+	if rawQuery == "" {
+		return path
+	}
+
+	separator := "?"
+	if strings.Contains(path, "?") {
+		separator = "&"
+	}
+
+	return path + separator + rawQuery
 }
 
 func isGzipAllowed(ae string) bool {
@@ -208,7 +223,6 @@ func (p *gcsProxy) proxy(ctx context.Context, w http.ResponseWriter, req *proxyR
 			if err == nil {
 				if objAttrs != nil {
 					// There is at least one object with this prefix, treat as folder
-					log.Printf("redirecting to folder path %q", req.path+"/")
 					req.redirectFunc(req.path+"/"+p.config.IndexFile, http.StatusMovedPermanently)
 					return
 				}
